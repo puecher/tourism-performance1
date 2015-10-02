@@ -1,10 +1,12 @@
 <?php
-
+error_reporting(0);
 // @TODO: use a php framework
 
 set_time_limit(0);
 
 $settings = parse_ini_file('settings.ini');
+//requires php5-intl module to work
+$formatter = new NumberFormatter('it', NumberFormatter::DECIMAL);
 
 mysql_connect($settings['server'], $settings['username'], $settings['password']); // @TODO: change db storage engine
 mysql_select_db($settings['database_name']);
@@ -158,7 +160,7 @@ function _addclashes(&$item1)
     <script src="js/script.js"></script>
     <script type="text/javascript" src="https://www.google.com/jsapi"></script>
     <script type="text/javascript">
-      google.load("visualization", "1", {packages:["geochart", "corechart"]});
+      google.load("visualization", "1", {packages:["geochart", "corechart"], 'language': 'it'});
       google.setOnLoadCallback(charts);
 
       function charts() {
@@ -574,12 +576,11 @@ function _addclashes(&$item1)
 
     $query = mysql_query("select round(avg(abs(datediff(departure, arrival))), 3) avg_stay from data".(count($where)>0?" where " . implode(" and ", $where):""));
     $row = mysql_fetch_object($query);
-
     ?>
     <div class="special-wrapper">
     <div class="special">
       <h2 class="noborder nomargin" id="infographics-usage-policy">Average Length of Stay</h2>
-      <p><?php echo $row->avg_stay; ?> days</p>
+      <p><?php echo $formatter->format($row->avg_stay); ?> days</p>
     </div>
     </div>
     <?php
@@ -591,7 +592,7 @@ function _addclashes(&$item1)
     <div class="special-wrapper">
     <div class="special">
       <h2 class="noborder nomargin" id="infographics-usage-policy">Average Number of Adults</h2>
-      <p><?php echo $row->avg_adults; ?> adults</p>
+      <p><?php echo $formatter->format($row->avg_adults); ?> adults</p>
     </div>
     </div>
     <?php
@@ -603,7 +604,7 @@ function _addclashes(&$item1)
     <div class="special-wrapper">
     <div class="special">
       <h2 class="noborder nomargin" id="infographics-usage-policy">Average Number of Children</h2>
-      <p><?php echo $row->avg_children; ?> children</p>
+      <p><?php echo $formatter->format($row->avg_children); ?> children</p>
     </div>
     </div>
 
