@@ -1,15 +1,17 @@
 <?php
+
+include_once 'settings.php';
+
 error_reporting(0);
 // @TODO: use a php framework
 
 set_time_limit(0);
 
-$settings = parse_ini_file('settings.ini');
 //requires php5-intl module to work
 $formatter = new NumberFormatter('it', NumberFormatter::DECIMAL);
 
-mysql_connect($settings['server'], $settings['username'], $settings['password']); // @TODO: change db storage engine
-mysql_select_db($settings['database_name']);
+mysql_connect(SERVER, USERNAME, PASSWORD); // @TODO: change db storage engine
+mysql_select_db(DATABASE_NAME);
 
 function random_date() {
   $hour = rand(0, 23);
