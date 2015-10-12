@@ -159,6 +159,16 @@ function _addclashes(&$item1)
 
 //var_dump($where); exit;
 
+$query = mysql_query("select max(c) c_max, max(avg_adults) avg_adults_max, max(avg_children) avg_children_max, max(avg_stay) avg_stay_max from (select
+          count(*) c,
+          round(avg(adults), 3) avg_adults,
+          round(avg(children), 3) avg_children,
+          round(avg(abs(datediff(departure, arrival))), 3) avg_stay
+          from data
+          ".(count($where)>0?" where " . implode(" and ", $where):"")."
+          group by date_format(arrival, '".$date_format1."')) a");
+$max = mysql_fetch_object($query);
+
 ?>
 <html>
   <head>
@@ -205,18 +215,20 @@ function _addclashes(&$item1)
             ".(count($where)>0?" where " . implode(" and ", $where):"")."
             group by yemo order by yemo asc");
           while($row = mysql_fetch_object($query)) : ?>
-            ,['<?php echo $row->formatted; ?>', <?php echo (float) $row->c; ?>, <?php echo (float) $row->avg_adults; ?>, <?php echo (float) $row->avg_children; ?>, <?php echo (float) $row->avg_stay; ?>]
+            ,['<?php echo $row->formatted; ?>', <?php echo round((100*(float) $row->c)/(float) $max->c_max); ?>, <?php echo round((100*(float) $row->avg_adults)/(float) $max->avg_adults_max); ?>, <?php echo round((100*(float) $row->avg_children)/(float) $max->avg_children_max); ?>, <?php echo round((100*(float) $row->avg_stay)/(float) $max->avg_stay_max); ?>]
           <?php endwhile; ?>
         ]);
 
         var options = {
           title: '<?php echo $enquiries_bookings_label; ?> by Arrival Date',
           curveType: 'function',
-           vAxis: {
+            vAxis: {
               viewWindowMode: 'explicit',
               viewWindow: {
                 min: 0,
-              }
+                max: 100
+              },
+              format: '#\'%\''
             }
         };
 
@@ -235,19 +247,21 @@ function _addclashes(&$item1)
             ".(count($where)>0?" where " . implode(" and ", $where):"")."
             group by yemo order by yemo asc");
           while($row = mysql_fetch_object($query)) : ?>
-            ,['<?php echo $row->formatted; ?>', <?php echo (float) $row->c; ?>]
+            ,['<?php echo $row->formatted; ?>', <?php echo (100*(float) $row->c)/(float) $max->c_max; ?>]
           <?php endwhile; ?>
         ]);
 
         var options = {
           title: '<?php echo $enquiries_bookings_label; ?> by Departure Date',
           curveType: 'function',
-           vAxis: {
-              viewWindowMode: 'explicit',
-              viewWindow: {
-                min: 0,
-              }
-            }
+          vAxis: {
+            viewWindowMode: 'explicit',
+            viewWindow: {
+              min: 0,
+              max: 100
+            },
+            format: '#\'%\''
+          }
         };
 
         var chart = new google.visualization.LineChart(document.getElementById('curve_chart3'));
@@ -268,20 +282,22 @@ function _addclashes(&$item1)
             ".(count($where)>0?" where " . implode(" and ", $where):"")."
             group by yemo order by yemo asc");
           while($row = mysql_fetch_object($query)) : ?>
-            ,['<?php echo $row->formatted; ?>', <?php echo (float) $row->c; ?>, <?php echo (float) $row->avg_adults; ?>, <?php echo (float) $row->avg_children; ?>, <?php echo (float) $row->avg_stay; ?>]
+            ,['<?php echo $row->formatted; ?>', <?php echo round((100*(float) $row->c)/(float) $max->c_max); ?>, <?php echo round((100*(float) $row->avg_adults)/(float) $max->avg_adults_max); ?>, <?php echo round((100*(float) $row->avg_children)/(float) $max->avg_children_max); ?>, <?php echo round((100*(float) $row->avg_stay)/(float) $max->avg_stay_max); ?>]
           <?php endwhile; ?>
         ]);
 
         var options = {
           title: '<?php echo $enquiries_bookings_label; ?> by Submit Date',
           curveType: 'function',
-           vAxis: {
-              viewWindowMode: 'explicit',
-              viewWindow: {
-                //max: 180,
-                min: 0,
-              }
-            }
+          vAxis: {
+            viewWindowMode: 'explicit',
+            viewWindow: {
+              //max: 180,
+              min: 0,
+              max: 100
+            },
+            format: '#\'%\''
+          }
         };
 
         var chart = new google.visualization.LineChart(document.getElementById('curve_chart2'));
@@ -357,6 +373,8 @@ function _addclashes(&$item1)
         chart.draw(data, options);
 
 
+        <?php $query = mysql_query("SELECT max(c) max FROM (SELECT count(*) c FROM `data` ".(count($where)>0?" where " . implode(" and ", $where):"")." group by country) a");
+        $max_by_country = mysql_fetch_object($query); ?>
         var data = google.visualization.arrayToDataTable([
           //['ID', 'Life Expectancy', 'Fertility Rate', 'Region',     'Population']
           ['ID', 'Average Length of Stay', 'Number of <?php echo $enquiries_bookings_label; ?>', 'Average number of Adults', 'Average number of Children']
@@ -369,7 +387,7 @@ function _addclashes(&$item1)
           FROM `data` a
           group by a.country");
           while($row = mysql_fetch_object($query)) : ?>
-            ,['<?php echo $row->country; ?>', <?php echo (float) $row->avg_days; ?>, <?php echo (float) $row->enquiries; ?>, <?php echo (float) $row->children; ?>, <?php echo (float) $row->adults; ?>]
+            ,['<?php echo $row->country; ?>', <?php echo (float) $row->avg_days; ?>, <?php echo round((100*(float) $row->enquiries)/$max_by_country->max); ?>, <?php echo (float) $row->children; ?>, <?php echo (float) $row->adults; ?>]
           <?php endwhile; ?>
           //,['CAN',    80.66,              1.67,      'North America',  33739900]
         ]);
@@ -377,7 +395,14 @@ function _addclashes(&$item1)
         var options = {
           title: 'Average Length of Stay and number of <?php echo $enquiries_bookings_label; ?>',
           hAxis: {title: 'Average Length of Stay'},
-          vAxis: {title: 'Number of <?php echo $enquiries_bookings_label; ?>'},
+          vAxis: {
+            title: 'Number of <?php echo $enquiries_bookings_label; ?>',
+            viewWindow: {
+              min: 0,
+              max: 100
+            },
+            format: '#\'%\''
+          },
           bubble: {textStyle: {fontSize: 11}}
         };
 
@@ -409,6 +434,8 @@ function _addclashes(&$item1)
         chart.draw(data, options);
 
 
+        <?php $query = mysql_query("SELECT max(c) max FROM (SELECT count(*) c FROM `data` ".(count($where)>0?" where " . implode(" and ", $where):"")." group by destination) a");
+        $max_by_destination = mysql_fetch_object($query); ?>
         var data = google.visualization.arrayToDataTable([
           ['ID', 'Average Length of Stay', 'Number of <?php echo $enquiries_bookings_label; ?>', 'Average number of Adults', 'Average number of Children']
           <?php $query = mysql_query("SELECT
@@ -420,14 +447,21 @@ function _addclashes(&$item1)
           FROM `data` a
           group by a.destination");
           while($row = mysql_fetch_object($query)) : ?>
-            ,['<?php echo $gemeinden[$row->destination]; ?>', <?php echo (float) $row->avg_days; ?>, <?php echo (float) $row->enquiries; ?>, <?php echo (float) $row->children; ?>, <?php echo (float) $row->adults; ?>]
+            ,['<?php echo $gemeinden[$row->destination]; ?>', <?php echo (float) $row->avg_days; ?>, <?php echo round((100*(float) $row->enquiries)/$max_by_destination->max); ?>, <?php echo (float) $row->children; ?>, <?php echo (float) $row->adults; ?>]
           <?php endwhile; ?>
         ]);
 
         var options = {
           title: 'Average Length of Stay and number of <?php echo $enquiries_bookings_label; ?>',
           hAxis: {title: 'Average Length of Stay'},
-          vAxis: {title: 'Number of <?php echo $enquiries_bookings_label; ?>'},
+          vAxis: {
+            title: 'Number of <?php echo $enquiries_bookings_label; ?>',
+            viewWindow: {
+              min: 0,
+              max: 100
+            },
+            format: '#\'%\''
+          },
           bubble: {textStyle: {fontSize: 11}}
         };
 
