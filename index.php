@@ -141,6 +141,16 @@ if($submitted_since = $_POST['submitted_since']) {
 if($submitted_until = $_POST['submitted_until']) {
   $where[] = "submitted_on <= '".$submitted_until."'";
 }
+$enquiries_bookings_label = 'Enquiries and bookings';
+if($enquiries_bookings = $_POST['enquiries_bookings']) {
+  if(1 == $enquiries_bookings) {
+    $enquiries_bookings_label = 'Enquiries';
+    $where[] = "booking = 0";
+  } elseif(2 == $enquiries_bookings) {
+    $enquiries_bookings_label = 'Bookings';
+    $where[] = "booking = 1";
+  }
+}
 
 function _addclashes(&$item1)
 {
@@ -168,7 +178,7 @@ function _addclashes(&$item1)
       function charts() {
 
         var data = google.visualization.arrayToDataTable([
-          ['Country', 'Number of Enquiries']
+          ['Country', 'Number of <?php echo $enquiries_bookings_label; ?>']
           <?php $query = mysql_query("select country, count(country) c from data".(count($where)>0?" where " . implode(" and ", $where):"")." group by country"); //  order by c desc
           while($row = mysql_fetch_object($query)) : ?>
             ,['<?php echo $row->country; ?>', <?php echo (float) $row->c; ?>]
@@ -183,7 +193,7 @@ function _addclashes(&$item1)
 
 
         var data = google.visualization.arrayToDataTable([
-          ['Date', 'Number of Enquiries', 'Average Number of Adults', 'Average Number of Children', 'Average Length of Stay']
+          ['Date', 'Number of <?php echo $enquiries_bookings_label; ?>', 'Average Number of Adults', 'Average Number of Children', 'Average Length of Stay']
           <?php $query = mysql_query("select
             date_format(arrival, '".$date_format1."') yemo,
             date_format(arrival, '".$date_format2."') formatted,
@@ -200,7 +210,7 @@ function _addclashes(&$item1)
         ]);
 
         var options = {
-          title: 'Enquiries by Arrival Date',
+          title: '<?php echo $enquiries_bookings_label; ?> by Arrival Date',
           curveType: 'function',
            vAxis: {
               viewWindowMode: 'explicit',
@@ -216,7 +226,7 @@ function _addclashes(&$item1)
 
 
         var data = google.visualization.arrayToDataTable([
-          ['Date', 'Number of Enquiries']
+          ['Date', 'Number of <?php echo $enquiries_bookings_label; ?>']
           <?php $query = mysql_query("select
             date_format(departure, '".$date_format1."') yemo,
             date_format(departure, '".$date_format2."') formatted,
@@ -230,7 +240,7 @@ function _addclashes(&$item1)
         ]);
 
         var options = {
-          title: 'Enquiries by Departure Date',
+          title: '<?php echo $enquiries_bookings_label; ?> by Departure Date',
           curveType: 'function',
            vAxis: {
               viewWindowMode: 'explicit',
@@ -246,7 +256,7 @@ function _addclashes(&$item1)
 
 
         var data = google.visualization.arrayToDataTable([
-          ['Date', 'Number of Enquiries', 'Average Number of Adults', 'Average Number of Children', 'Average Length of Stay']
+          ['Date', 'Number of <?php echo $enquiries_bookings_label; ?>', 'Average Number of Adults', 'Average Number of Children', 'Average Length of Stay']
           <?php $query = mysql_query("select
             date_format(submitted_on, '".$date_format1."') yemo,
             date_format(submitted_on, '".$date_format2."') formatted,
@@ -263,7 +273,7 @@ function _addclashes(&$item1)
         ]);
 
         var options = {
-          title: 'Enquiries by Submit Date',
+          title: '<?php echo $enquiries_bookings_label; ?> by Submit Date',
           curveType: 'function',
            vAxis: {
               viewWindowMode: 'explicit',
@@ -280,7 +290,7 @@ function _addclashes(&$item1)
 
 
         var data = google.visualization.arrayToDataTable([
-          ['Category', 'Number of Enquiries']
+          ['Category', 'Number of <?php echo $enquiries_bookings_label; ?>']
           <?php $query = mysql_query("select category, count(*) c from data".(count($where)>0?" where " . implode(" and ", $where):"")." group by category");
           while($row = mysql_fetch_object($query)) : ?>
             ,['<?php echo $categories[$row->category]; ?>', <?php echo (float) $row->c; ?>]
@@ -297,7 +307,7 @@ function _addclashes(&$item1)
 
 
         var data = google.visualization.arrayToDataTable([
-          ['Destination', 'Number of Enquiries']
+          ['Destination', 'Number of <?php echo $enquiries_bookings_label; ?>']
           <?php $query = mysql_query("select destination, count(*) c from data".(count($where)>0?" where " . implode(" and ", $where):"")." group by destination order by c desc");
           while($row = mysql_fetch_object($query)) : ?>
             ,['<?php echo $gemeinden[$row->destination]; ?>', <?php echo (float) $row->c; ?>]
@@ -314,7 +324,7 @@ function _addclashes(&$item1)
 
 
         var data = google.visualization.arrayToDataTable([
-          ['Day of Week', 'Number of Enquiries']
+          ['Day of Week', 'Number of <?php echo $enquiries_bookings_label; ?>']
           <?php $query = mysql_query("select date_format(arrival, '%w') day_of_week, date_format(arrival, '%W') weekday_name, count(*) c from data".(count($where)>0?" where " . implode(" and ", $where):"")." group by day_of_week order by c desc");
           while($row = mysql_fetch_object($query)) : ?>
             ,['<?php echo $row->weekday_name; ?>', <?php echo (float) $row->c; ?>]
@@ -331,7 +341,7 @@ function _addclashes(&$item1)
 
 
         var data = google.visualization.arrayToDataTable([
-          ['Day of Week', 'Number of Enquiries']
+          ['Day of Week', 'Number of <?php echo $enquiries_bookings_label; ?>']
           <?php $query = mysql_query("select date_format(departure, '%w') day_of_week, date_format(departure, '%W') weekday_name, count(*) c from data".(count($where)>0?" where " . implode(" and ", $where):"")." group by day_of_week order by c desc");
           while($row = mysql_fetch_object($query)) : ?>
             ,['<?php echo $row->weekday_name; ?>', <?php echo (float) $row->c; ?>]
@@ -349,7 +359,7 @@ function _addclashes(&$item1)
 
         var data = google.visualization.arrayToDataTable([
           //['ID', 'Life Expectancy', 'Fertility Rate', 'Region',     'Population']
-          ['ID', 'Average Length of Stay', 'Number of Enquiries', 'Average number of Adults', 'Average number of Children']
+          ['ID', 'Average Length of Stay', 'Number of <?php echo $enquiries_bookings_label; ?>', 'Average number of Adults', 'Average number of Children']
           <?php $query = mysql_query("SELECT
           a.country,
           (SELECT count(*) FROM data where country = a.country".(count($where)>0?" and " . implode(" and ", $where):"").") enquiries,
@@ -365,9 +375,9 @@ function _addclashes(&$item1)
         ]);
 
         var options = {
-          title: 'Average Length of Stay and number of Enquiries',
+          title: 'Average Length of Stay and number of <?php echo $enquiries_bookings_label; ?>',
           hAxis: {title: 'Average Length of Stay'},
-          vAxis: {title: 'Number of Enquiries'},
+          vAxis: {title: 'Number of <?php echo $enquiries_bookings_label; ?>'},
           bubble: {textStyle: {fontSize: 11}}
         };
 
@@ -400,7 +410,7 @@ function _addclashes(&$item1)
 
 
         var data = google.visualization.arrayToDataTable([
-          ['ID', 'Average Length of Stay', 'Number of Enquiries', 'Average number of Adults', 'Average number of Children']
+          ['ID', 'Average Length of Stay', 'Number of <?php echo $enquiries_bookings_label; ?>', 'Average number of Adults', 'Average number of Children']
           <?php $query = mysql_query("SELECT
           a.destination,
           (SELECT count(*) FROM data where destination = a.destination".(count($where)>0?" and " . implode(" and ", $where):"").") enquiries,
@@ -415,9 +425,9 @@ function _addclashes(&$item1)
         ]);
 
         var options = {
-          title: 'Average Length of Stay and number of Enquiries',
+          title: 'Average Length of Stay and number of <?php echo $enquiries_bookings_label; ?>',
           hAxis: {title: 'Average Length of Stay'},
-          vAxis: {title: 'Number of Enquiries'},
+          vAxis: {title: 'Number of <?php echo $enquiries_bookings_label; ?>'},
           bubble: {textStyle: {fontSize: 11}}
         };
 
@@ -554,6 +564,15 @@ function _addclashes(&$item1)
             <div class="col-sm-6"><input type="text" class="form-control datepicker" name="submitted_since" id="submitted_since" placeholder="YYYY-MM-DD" value="<?php echo $_POST['submitted_since']; ?>"></div>
             <div class="col-sm-6"><input type="text" class="form-control datepicker" name="submitted_until" id="submitted_until" placeholder="YYYY-MM-DD" value="<?php echo $_POST['submitted_until']; ?>"></div>
           </div>
+        </div>
+        </div><div class="col-sm-4">
+        <div class="form-group">
+          <label for="enquiries_bookings">Enquiries / Bookings</label>
+          <select class="form-control" id="enquiries_bookings" name="enquiries_bookings">
+            <option value=""></option>
+            <option value="1"<?php if ( 1 == $_POST['enquiries_bookings'] ) echo ' selected="selected"'; ?>>Enquiries</option>
+            <option value="2"<?php if ( 2 == $_POST['enquiries_bookings'] ) echo ' selected="selected"'; ?>>Bookings</option>
+          </select>
         </div>
         </div>
         </div>
