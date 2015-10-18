@@ -30,6 +30,15 @@ $categories = array(
   'Privatvermieter',
   'Bauernhöfe',
   'Sonstiges',
+  'Altro',
+);
+$categoriesColors = array(
+  1 => '#dc3912',
+  '#ff9900',
+  '#109618',
+  '#990099',
+  '#0099c6',
+  '#cccccc',
 );
 
 $countries = array();
@@ -307,8 +316,9 @@ $max = mysql_fetch_object($query);
 
         var data = google.visualization.arrayToDataTable([
           ['Category', 'Number of <?php echo $enquiries_bookings_label; ?>']
-          <?php $query = mysql_query("select category, count(*) c from data".(count($where)>0?" where " . implode(" and ", $where):"")." group by category");
-          while($row = mysql_fetch_object($query)) : ?>
+          <?php $slicesColors = array();
+          $query = mysql_query("select category, count(*) c from data".(count($where)>0?" where " . implode(" and ", $where):"")." group by category");
+          while($row = mysql_fetch_object($query)) : $slicesColors[] = $categoriesColors[$row->category]; ?>
             ,['<?php echo $categories[$row->category]; ?>', <?php echo (float) $row->c; ?>]
           <?php endwhile; ?>
         ]);
@@ -316,6 +326,9 @@ $max = mysql_fetch_object($query);
         var options = {
           title: 'Categories',
           pieHole: 0.4,
+          slices: {
+            <?php foreach ( $slicesColors as $key => $color ) echo $key . ": { color: '" . $color . "' },"; ?>
+          }
         };
 
         var chart = new google.visualization.PieChart(document.getElementById('donutchart'));
