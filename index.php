@@ -103,11 +103,20 @@ function dummy_data() {
 }*/
 
 $where = array(); // create where statement
+
 if($arrival = $_POST['arrival']) {
-  $where[] = "arrival = '".$arrival."'";
+  if($_a = explode(' - ', $arrival)) {
+    $where[] = "arrival BETWEEN '".$_a[0]."' AND '".$_a[1]."'";
+  } else {
+    $where[] = "arrival = '".$arrival."'";
+  }
 }
 if($departure = $_POST['departure']) {
-  $where[] = "departure = '".$departure."'";
+  if($_d = explode(' - ', $departure)) {
+    $where[] = "departure BETWEEN '".$_d[0]."' AND '".$_d[1]."'";
+  } else {
+    $where[] = "departure = '".$departure."'";
+  }
 }
 if($country = $_POST['country']) {
   array_walk($country, '_addclashes');
@@ -142,14 +151,18 @@ if($category = $_POST['category']) {
   $where[] = "category IN (".implode(",",$category).")";
 }
 if($submitted_on = $_POST['submitted_on']) {
-  $where[] = "submitted_on = '".$submitted_on."'";
+  if($_s = explode(' - ', $submitted_on)) {
+    $where[] = "submitted_on BETWEEN '".$_s[0]."' AND '".$_s[1]."'";
+  } else {
+    $where[] = "submitted_on = '".$submitted_on."'";
+  }
 }
-if($submitted_since = $_POST['submitted_since']) {
+/*if($submitted_since = $_POST['submitted_since']) {
   $where[] = "submitted_on >= '".$submitted_since."'";
 }
 if($submitted_until = $_POST['submitted_until']) {
   $where[] = "submitted_on <= '".$submitted_until."'";
-}
+}*/
 $enquiries_bookings_label = 'Enquiries and bookings';
 if($enquiries_bookings = $_POST['enquiries_bookings']) {
   if(1 == $enquiries_bookings) {
@@ -159,6 +172,15 @@ if($enquiries_bookings = $_POST['enquiries_bookings']) {
     $enquiries_bookings_label = 'Bookings';
     $where[] = "booking = 1";
   }
+}
+if($max_datediff = (int) $_POST['max_datediff']) {
+  $where[] = "abs(datediff(arrival, departure)) <= ".$max_datediff;
+}
+if($max_adults = (int) $_POST['max_adults']) {
+  $where[] = "adults <= ".$adults;
+}
+if($max_children = (int) $_POST['max_children']) {
+  $where[] = "children <= ".$max_children;
 }
 
 function _addclashes(&$item1)
@@ -179,16 +201,12 @@ $query = mysql_query("select max(c) c_max, max(avg_adults) avg_adults_max, max(a
 $max = mysql_fetch_object($query);
 
 ?>
+<!DOCTYPE html>
 <html>
   <head>
     <meta charset="UTF-8">
-    <link href='http://fonts.googleapis.com/css?family=Roboto' rel='stylesheet' type='text/css'>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
-    <link rel="stylesheet" href="css/bootstrap-datepicker3.min.css">
-    <script src="//code.jquery.com/jquery-1.11.3.min.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
-    <script src="js/bootstrap-datepicker.min.js"></script>
-    <script src="js/script.js"></script>
+    <link rel="stylesheet" href="//cdn.jsdelivr.net/bootstrap.daterangepicker/2/daterangepicker.css">
     <script type="text/javascript" src="https://www.google.com/jsapi"></script>
     <script type="text/javascript">
       google.load("visualization", "1", {packages:["geochart", "corechart"], 'language': 'it'});
@@ -508,7 +526,7 @@ $max = mysql_fetch_object($query);
     </script>
     <style>
     body {
-      font-family: 'Roboto', sans-serif;
+      font: 18px/1.5 sans-serif;
     }
     .special-wrapper {
       float: left;
@@ -539,89 +557,106 @@ $max = mysql_fetch_object($query);
     <div class="container-fluid">
       <h1>Data analyzer</h1>
       <form action="" method="post">
-        <div class="row"><div class="col-sm-4">
-        <div class="form-group">
-          <label for="date_format">Granularity</label>
-          <select class="form-control" name="date_format" id="date_format">
-            <option<?php if ( 'month' == $_POST['date_format'] ) echo ' selected="selected"'; ?>>month</option>
-            <option<?php if ( 'month-week' == $_POST['date_format'] ) echo ' selected="selected"'; ?>>month-week</option>
-            <option<?php if ( 'week' == $_POST['date_format'] ) echo ' selected="selected"'; ?>>week</option>
-            <option<?php if ( 'day' == $_POST['date_format'] ) echo ' selected="selected"'; ?>>day</option>
-          </select>
-        </div>
-        </div><div class="col-sm-4">
-        <div class="form-group">
-          <label for="arrival">Arrival</label>
-          <input type="text" class="form-control datepicker" name="arrival" id="arrival" placeholder="YYYY-MM-DD" value="<?php echo $_POST['arrival']; ?>">
-        </div>
-        </div><div class="col-sm-4">
-        <div class="form-group">
-          <label for="arrival">Departure</label>
-          <input type="text" class="form-control datepicker" name="departure" id="departure" placeholder="YYYY-MM-DD" value="<?php echo $_POST['departure']; ?>">
-        </div>
-        </div></div>
-        <div class="row"><div class="col-sm-4">
-        <div class="form-group">
-          <label for="country">Country</label>
-          <select multiple class="form-control" id="country" name="country[]">
-            <?php foreach($countries as $country) : ?>
-              <option value="<?php echo $country; ?>"<?php if ( in_array( $country, (array) $_POST['country'] ) ) echo ' selected="selected"'; ?>><?php echo $country; ?></option>
-            <?php endforeach ; ?>
-          </select>
-        </div>
-        </div><div class="col-sm-4">
-        <div class="form-group">
-          <label for="adults">Adults</label>
-          <input type="text" class="form-control" name="adults" id="adults" placeholder="e.g. 2 or 3-5" value="<?php echo $_POST['adults']; ?>">
-        </div>
-        </div><div class="col-sm-4">
-        <div class="form-group">
-          <label for="children">Children</label>
-          <input type="text" class="form-control" name="children" id="children" placeholder="e.g. 3 or 2-5" value="<?php echo $_POST['children']; ?>">
-        </div>
-        </div></div>
-        <div class="row"><div class="col-sm-4">
-        <div class="form-group">
-          <label for="destination">Destination</label>
-          <select multiple class="form-control" id="destination" name="destination[]">
-            <?php foreach($gemeinden as $key => $destination) : ?>
-              <option value="<?php echo $key; ?>"<?php if ( in_array( $key, (array) $_POST['destination'] ) ) echo ' selected="selected"'; ?>><?php echo $destination; ?></option>
-            <?php endforeach ; ?>
-          </select>
-        </div>
-        </div><div class="col-sm-4">
-        <div class="form-group">
-          <label for="category">Category</label>
-          <select multiple class="form-control" id="category" name="category[]">
-            <?php foreach($categories as $key => $category) : ?>
-              <option value="<?php echo $key; ?>"<?php if ( in_array( $key, (array) $_POST['category'] ) ) echo ' selected="selected"'; ?>><?php echo $category; ?></option>
-            <?php endforeach ; ?>
-          </select>
-        </div>
-        </div><div class="col-sm-4">
-        <div class="form-group">
-          <label for="children">Submitted On</label>
-          <input type="text" class="form-control datepicker" name="submitted_on" id="submitted_on" placeholder="YYYY-MM-DD" value="<?php echo $_POST['submitted_on']; ?>">
-        </div>
-        </div></div>
-        <div class="row"><div class="col-sm-4">
-        <div class="form-group">
-          <label for="children">Submitted Between</label>
-          <div class="row">
-            <div class="col-sm-6"><input type="text" class="form-control datepicker" name="submitted_since" id="submitted_since" placeholder="YYYY-MM-DD" value="<?php echo $_POST['submitted_since']; ?>"></div>
-            <div class="col-sm-6"><input type="text" class="form-control datepicker" name="submitted_until" id="submitted_until" placeholder="YYYY-MM-DD" value="<?php echo $_POST['submitted_until']; ?>"></div>
+        <div class="row">
+          <div class="col-sm-3">
+            <div class="form-group">
+              <label for="date_format">Granularity</label>
+              <select class="form-control" name="date_format" id="date_format">
+                <option<?php if ( 'month' == $_POST['date_format'] ) echo ' selected="selected"'; ?>>month</option>
+                <option<?php if ( 'month-week' == $_POST['date_format'] ) echo ' selected="selected"'; ?>>month-week</option>
+                <option<?php if ( 'week' == $_POST['date_format'] ) echo ' selected="selected"'; ?>>week</option>
+                <option<?php if ( 'day' == $_POST['date_format'] ) echo ' selected="selected"'; ?>>day</option>
+              </select>
+            </div>
           </div>
-        </div>
-        </div><div class="col-sm-4">
-        <div class="form-group">
-          <label for="enquiries_bookings">Enquiries / Bookings</label>
-          <select class="form-control" id="enquiries_bookings" name="enquiries_bookings">
-            <option value=""></option>
-            <option value="1"<?php if ( 1 == $_POST['enquiries_bookings'] ) echo ' selected="selected"'; ?>>Enquiries</option>
-            <option value="2"<?php if ( 2 == $_POST['enquiries_bookings'] ) echo ' selected="selected"'; ?>>Bookings</option>
-          </select>
-        </div>
-        </div>
+          <div class="col-sm-3">
+            <div class="form-group">
+              <label for="arrival">Arrival</label>
+              <input type="text" class="form-control datepicker" name="arrival" id="arrival" placeholder="YYYY-MM-DD" value="<?php echo $_POST['arrival']; ?>">
+            </div>
+          </div>
+          <div class="col-sm-3">
+            <div class="form-group">
+              <label for="arrival">Departure</label>
+              <input type="text" class="form-control datepicker" name="departure" id="departure" placeholder="YYYY-MM-DD" value="<?php echo $_POST['departure']; ?>">
+            </div>
+          </div>
+          <div class="col-sm-3">
+            <div class="form-group">
+              <label for="country">Country</label>
+              <select multiple class="form-control" id="country" name="country[]">
+                <?php foreach($countries as $country) : ?>
+                  <option value="<?php echo $country; ?>"<?php if ( in_array( $country, (array) $_POST['country'] ) ) echo ' selected="selected"'; ?>><?php echo $country; ?></option>
+                <?php endforeach ; ?>
+              </select>
+            </div>
+          </div>
+          <div class="col-sm-3">
+            <div class="form-group">
+              <label for="adults">Adults</label>
+              <input type="text" class="form-control" name="adults" id="adults" placeholder="e.g. 2 or 3-5" value="<?php echo $_POST['adults']; ?>">
+            </div>
+          </div>
+          <div class="col-sm-3">
+            <div class="form-group">
+              <label for="children">Children</label>
+              <input type="text" class="form-control" name="children" id="children" placeholder="e.g. 3 or 2-5" value="<?php echo $_POST['children']; ?>">
+            </div>
+          </div>
+          <div class="col-sm-3">
+            <div class="form-group">
+              <label for="destination">Destination</label>
+              <select multiple class="form-control" id="destination" name="destination[]">
+                <?php foreach($gemeinden as $key => $destination) : ?>
+                  <option value="<?php echo $key; ?>"<?php if ( in_array( $key, (array) $_POST['destination'] ) ) echo ' selected="selected"'; ?>><?php echo $destination; ?></option>
+                <?php endforeach ; ?>
+              </select>
+            </div>
+          </div>
+          <div class="col-sm-3">
+            <div class="form-group">
+              <label for="category">Category</label>
+              <select multiple class="form-control" id="category" name="category[]">
+                <?php foreach($categories as $key => $category) : ?>
+                  <option value="<?php echo $key; ?>"<?php if ( in_array( $key, (array) $_POST['category'] ) ) echo ' selected="selected"'; ?>><?php echo $category; ?></option>
+                <?php endforeach ; ?>
+              </select>
+            </div>
+          </div>
+          <div class="col-sm-3">
+            <div class="form-group">
+              <label for="children">Submitted On</label>
+              <input type="text" class="form-control datepicker" name="submitted_on" id="submitted_on" placeholder="YYYY-MM-DD" value="<?php echo $_POST['submitted_on']; ?>">
+            </div>
+          </div>
+          <div class="col-sm-3">
+            <div class="form-group">
+              <label for="enquiries_bookings">Enquiries / Bookings</label>
+              <select class="form-control" id="enquiries_bookings" name="enquiries_bookings">
+                <option value=""></option>
+                <option value="1"<?php if ( 1 == $_POST['enquiries_bookings'] ) echo ' selected="selected"'; ?>>Enquiries</option>
+                <option value="2"<?php if ( 2 == $_POST['enquiries_bookings'] ) echo ' selected="selected"'; ?>>Bookings</option>
+              </select>
+            </div>
+          </div>
+          <div class="col-sm-3">
+            <div class="form-group">
+              <label for="max_datediff">Max datediff(arrival, departure) in Days (<=)</label>
+              <input type="text" class="form-control datepicker" name="max_datediff" id="max_datediff" value="<?php echo $_POST['max_datediff']; ?>">
+            </div>
+          </div>
+          <div class="col-sm-3">
+            <div class="form-group">
+              <label for="max_adults">Max Adults (<=)</label>
+              <input type="text" class="form-control" name="max_adults" id="max_adults" value="<?php echo $_POST['max_adults']; ?>">
+            </div>
+          </div>
+          <div class="col-sm-3">
+            <div class="form-group">
+              <label for="max_children">Max Children (<=)</label>
+              <input type="text" class="form-control" name="max_children" id="max_children" value="<?php echo $_POST['max_children']; ?>">
+            </div>
+          </div>
         </div>
         <button type="submit" class="btn btn-default">Submit</button>
       </form>
@@ -675,6 +710,28 @@ $max = mysql_fetch_object($query);
       <p><?php echo $formatter->format($row->avg_children); ?> children</p>
     </div>
     </div>
+
+    <script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+    <script src="//cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+    <script src="//cdn.jsdelivr.net/bootstrap.daterangepicker/2/daterangepicker.js"></script>
+    <script>
+    jQuery(function($) {
+      $('.datepicker').daterangepicker({
+        autoUpdateInput: false,
+        locale: {
+          cancelLabel: 'Clear',
+          format: 'YYYY-MM-DD'
+        }
+      });
+      $('.datepicker').on('apply.daterangepicker', function(ev, picker) {
+        $(this).val(picker.startDate.format('YYYY-MM-DD') + ' - ' + picker.endDate.format('YYYY-MM-DD'));
+      });
+      $('.datepicker').on('cancel.daterangepicker', function(ev, picker) {
+        $(this).val('');
+      });
+    });
+    </script>
 
   </body>
 </html>
