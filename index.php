@@ -10,8 +10,7 @@ set_time_limit(0);
 //requires php5-intl module to work
 $formatter = new NumberFormatter('it', NumberFormatter::DECIMAL);
 
-mysql_connect(SERVER, USERNAME, PASSWORD); // @TODO: change db storage engine
-mysql_select_db(DATABASE_NAME);
+$con = mysqli_connect(SERVER, USERNAME, PASSWORD, DATABASE_NAME); // @TODO: change db storage engine
 
 function random_date() {
   $hour = rand(0, 23);
@@ -42,8 +41,8 @@ $categoriesColors = array(
 );
 
 $countries = array();
-$query = mysql_query("select distinct country from data where country != '' order by country");
-while($row = mysql_fetch_object($query)) {
+$query = mysqli_query($con, "select distinct country from data where country != '' order by country");
+while($row = mysqli_fetch_object($query)) {
   $countries[] = $row->country;
 }
 
@@ -190,7 +189,7 @@ function _addclashes(&$item1)
 
 //var_dump($where); exit;
 
-$query = mysql_query("select max(c) c_max, max(avg_adults) avg_adults_max, max(avg_children) avg_children_max, max(avg_stay) avg_stay_max from (select
+$query = mysqli_query($con, "select max(c) c_max, max(avg_adults) avg_adults_max, max(avg_children) avg_children_max, max(avg_stay) avg_stay_max from (select
           count(*) c,
           round(avg(adults), 3) avg_adults,
           round(avg(children), 3) avg_children,
@@ -198,7 +197,7 @@ $query = mysql_query("select max(c) c_max, max(avg_adults) avg_adults_max, max(a
           from data
           ".(count($where)>0?" where " . implode(" and ", $where):"")."
           group by date_format(arrival, '".$date_format1."')) a");
-$max = mysql_fetch_object($query);
+$max = mysqli_fetch_object($query);
 
 ?>
 <!DOCTYPE html>
@@ -216,8 +215,8 @@ $max = mysql_fetch_object($query);
 
         var data = google.visualization.arrayToDataTable([
           ['Country', 'Number of <?php echo $enquiries_bookings_label; ?>']
-          <?php $query = mysql_query("select country, count(country) c from data".(count($where)>0?" where " . implode(" and ", $where):"")." group by country"); //  order by c desc
-          while($row = mysql_fetch_object($query)) : ?>
+          <?php $query = mysqli_query($con, "select country, count(country) c from data".(count($where)>0?" where " . implode(" and ", $where):"")." group by country"); //  order by c desc
+          while($row = mysqli_fetch_object($query)) : ?>
             ,['<?php echo $row->country; ?>', <?php echo (float) $row->c; ?>]
           <?php endwhile ; ?>
         ]);
@@ -231,7 +230,7 @@ $max = mysql_fetch_object($query);
 
         var data = google.visualization.arrayToDataTable([
           ['Date', 'Number of <?php echo $enquiries_bookings_label; ?>', 'Average Number of Adults', 'Average Number of Children', 'Average Length of Stay']
-          <?php $query = mysql_query("select
+          <?php $query = mysqli_query($con, "select
             date_format(arrival, '".$date_format1."') yemo,
             date_format(arrival, '".$date_format2."') formatted,
             count(*) c,
@@ -241,7 +240,7 @@ $max = mysql_fetch_object($query);
             from data
             ".(count($where)>0?" where " . implode(" and ", $where):"")."
             group by yemo order by yemo asc");
-          while($row = mysql_fetch_object($query)) : ?>
+          while($row = mysqli_fetch_object($query)) : ?>
             ,['<?php echo $row->formatted; ?>', <?php echo round((100*(float) $row->c)/(float) $max->c_max); ?>, <?php echo round((100*(float) $row->avg_adults)/(float) $max->avg_adults_max); ?>, <?php echo round((100*(float) $row->avg_children)/(float) $max->avg_children_max); ?>, <?php echo round((100*(float) $row->avg_stay)/(float) $max->avg_stay_max); ?>]
           <?php endwhile; ?>
         ]);
@@ -266,14 +265,14 @@ $max = mysql_fetch_object($query);
 
         var data = google.visualization.arrayToDataTable([
           ['Date', 'Number of <?php echo $enquiries_bookings_label; ?>']
-          <?php $query = mysql_query("select
+          <?php $query = mysqli_query($con, "select
             date_format(departure, '".$date_format1."') yemo,
             date_format(departure, '".$date_format2."') formatted,
             count(*) c
             from data
             ".(count($where)>0?" where " . implode(" and ", $where):"")."
             group by yemo order by yemo asc");
-          while($row = mysql_fetch_object($query)) : ?>
+          while($row = mysqli_fetch_object($query)) : ?>
             ,['<?php echo $row->formatted; ?>', <?php echo (100*(float) $row->c)/(float) $max->c_max; ?>]
           <?php endwhile; ?>
         ]);
@@ -298,7 +297,7 @@ $max = mysql_fetch_object($query);
 
         var data = google.visualization.arrayToDataTable([
           ['Date', 'Number of <?php echo $enquiries_bookings_label; ?>', 'Average Number of Adults', 'Average Number of Children', 'Average Length of Stay']
-          <?php $query = mysql_query("select
+          <?php $query = mysqli_query($con, "select
             date_format(submitted_on, '".$date_format1."') yemo,
             date_format(submitted_on, '".$date_format2."') formatted,
             count(*) c,
@@ -308,7 +307,7 @@ $max = mysql_fetch_object($query);
             from data
             ".(count($where)>0?" where " . implode(" and ", $where):"")."
             group by yemo order by yemo asc");
-          while($row = mysql_fetch_object($query)) : ?>
+          while($row = mysqli_fetch_object($query)) : ?>
             ,['<?php echo $row->formatted; ?>', <?php echo round((100*(float) $row->c)/(float) $max->c_max); ?>, <?php echo round((100*(float) $row->avg_adults)/(float) $max->avg_adults_max); ?>, <?php echo round((100*(float) $row->avg_children)/(float) $max->avg_children_max); ?>, <?php echo round((100*(float) $row->avg_stay)/(float) $max->avg_stay_max); ?>]
           <?php endwhile; ?>
         ]);
@@ -335,8 +334,8 @@ $max = mysql_fetch_object($query);
         var data = google.visualization.arrayToDataTable([
           ['Category', 'Number of <?php echo $enquiries_bookings_label; ?>']
           <?php $slicesColors = array();
-          $query = mysql_query("select category, count(*) c from data".(count($where)>0?" where " . implode(" and ", $where):"")." group by category");
-          while($row = mysql_fetch_object($query)) : $slicesColors[] = $categoriesColors[$row->category]; ?>
+          $query = mysqli_query($con, "select category, count(*) c from data".(count($where)>0?" where " . implode(" and ", $where):"")." group by category");
+          while($row = mysqli_fetch_object($query)) : $slicesColors[] = $categoriesColors[$row->category]; ?>
             ,['<?php echo $categories[$row->category]; ?>', <?php echo (float) $row->c; ?>]
           <?php endwhile; ?>
         ]);
@@ -355,8 +354,8 @@ $max = mysql_fetch_object($query);
 
         var data = google.visualization.arrayToDataTable([
           ['Destination', 'Number of <?php echo $enquiries_bookings_label; ?>']
-          <?php $query = mysql_query("select destination, count(*) c from data".(count($where)>0?" where " . implode(" and ", $where):"")." group by destination order by c desc");
-          while($row = mysql_fetch_object($query)) : ?>
+          <?php $query = mysqli_query($con, "select destination, count(*) c from data".(count($where)>0?" where " . implode(" and ", $where):"")." group by destination order by c desc");
+          while($row = mysqli_fetch_object($query)) : ?>
             ,['<?php echo $gemeinden[$row->destination]; ?>', <?php echo (float) $row->c; ?>]
           <?php endwhile; ?>
         ]);
@@ -372,8 +371,8 @@ $max = mysql_fetch_object($query);
 
         var data = google.visualization.arrayToDataTable([
           ['Day of Week', 'Number of <?php echo $enquiries_bookings_label; ?>']
-          <?php $query = mysql_query("select date_format(arrival, '%w') day_of_week, date_format(arrival, '%W') weekday_name, count(*) c from data".(count($where)>0?" where " . implode(" and ", $where):"")." group by day_of_week order by c desc");
-          while($row = mysql_fetch_object($query)) : ?>
+          <?php $query = mysqli_query($con, "select date_format(arrival, '%w') day_of_week, date_format(arrival, '%W') weekday_name, count(*) c from data".(count($where)>0?" where " . implode(" and ", $where):"")." group by day_of_week order by c desc");
+          while($row = mysqli_fetch_object($query)) : ?>
             ,['<?php echo $row->weekday_name; ?>', <?php echo (float) $row->c; ?>]
           <?php endwhile; ?>
         ]);
@@ -389,8 +388,8 @@ $max = mysql_fetch_object($query);
 
         var data = google.visualization.arrayToDataTable([
           ['Day of Week', 'Number of <?php echo $enquiries_bookings_label; ?>']
-          <?php $query = mysql_query("select date_format(departure, '%w') day_of_week, date_format(departure, '%W') weekday_name, count(*) c from data".(count($where)>0?" where " . implode(" and ", $where):"")." group by day_of_week order by c desc");
-          while($row = mysql_fetch_object($query)) : ?>
+          <?php $query = mysqli_query($con, "select date_format(departure, '%w') day_of_week, date_format(departure, '%W') weekday_name, count(*) c from data".(count($where)>0?" where " . implode(" and ", $where):"")." group by day_of_week order by c desc");
+          while($row = mysqli_fetch_object($query)) : ?>
             ,['<?php echo $row->weekday_name; ?>', <?php echo (float) $row->c; ?>]
           <?php endwhile; ?>
         ]);
@@ -404,12 +403,12 @@ $max = mysql_fetch_object($query);
         chart.draw(data, options);
 
 
-        <?php $query = mysql_query("SELECT max(c) max FROM (SELECT count(*) c FROM `data` ".(count($where)>0?" where " . implode(" and ", $where):"")." group by country) a");
-        $max_by_country = mysql_fetch_object($query); ?>
+        <?php $query = mysqli_query($con, "SELECT max(c) max FROM (SELECT count(*) c FROM `data` ".(count($where)>0?" where " . implode(" and ", $where):"")." group by country) a");
+        $max_by_country = mysqli_fetch_object($query); ?>
         var data = google.visualization.arrayToDataTable([
           //['ID', 'Life Expectancy', 'Fertility Rate', 'Region',     'Population']
           ['ID', 'Average Length of Stay', 'Number of <?php echo $enquiries_bookings_label; ?>', 'Average number of Adults', 'Average number of Children']
-          <?php $query = mysql_query("SELECT
+          <?php $query = mysqli_query($con, "SELECT
           a.country,
           (SELECT count(*) FROM data where country = a.country".(count($where)>0?" and " . implode(" and ", $where):"").") enquiries,
           (SELECT round(avg(abs(datediff(arrival, departure))), 3) FROM data WHERE country = a.country".(count($where)>0?" and " . implode(" and ", $where):"").") avg_days,
@@ -417,7 +416,7 @@ $max = mysql_fetch_object($query);
           (SELECT avg(children) FROM data where country = a.country".(count($where)>0?" and " . implode(" and ", $where):"").") children
           FROM `data` a
           group by a.country");
-          while($row = mysql_fetch_object($query)) : ?>
+          while($row = mysqli_fetch_object($query)) : ?>
             ,['<?php echo $row->country; ?>', <?php echo (float) $row->avg_days; ?>, <?php echo round((100*(float) $row->enquiries)/$max_by_country->max); ?>, <?php echo (float) $row->children; ?>, <?php echo (float) $row->adults; ?>]
           <?php endwhile; ?>
           //,['CAN',    80.66,              1.67,      'North America',  33739900]
@@ -443,13 +442,13 @@ $max = mysql_fetch_object($query);
 
         var data = google.visualization.arrayToDataTable([
           ['ID', 'Number of Adults', 'Number of Children']
-          <?php $query = mysql_query("SELECT
+          <?php $query = mysqli_query($con, "SELECT
           a.country,
           (SELECT round(avg(adults), 3) FROM data where country = a.country".(count($where)>0?" and " . implode(" and ", $where):"").") avg_adults,
           (SELECT round(avg(children), 3) FROM data WHERE country = a.country".(count($where)>0?" and " . implode(" and ", $where):"").") avg_children
           FROM `data` a
           group by a.country");
-          while($row = mysql_fetch_object($query)) : ?>
+          while($row = mysqli_fetch_object($query)) : ?>
             ,['<?php echo $row->country; ?>', <?php echo (float) $row->avg_adults; ?>, <?php echo (float) $row->avg_children; ?>]
           <?php endwhile; ?>
         ]);
@@ -465,11 +464,11 @@ $max = mysql_fetch_object($query);
         chart.draw(data, options);
 
 
-        <?php $query = mysql_query("SELECT max(c) max FROM (SELECT count(*) c FROM `data` ".(count($where)>0?" where " . implode(" and ", $where):"")." group by destination) a");
-        $max_by_destination = mysql_fetch_object($query); ?>
+        <?php $query = mysqli_query($con, "SELECT max(c) max FROM (SELECT count(*) c FROM `data` ".(count($where)>0?" where " . implode(" and ", $where):"")." group by destination) a");
+        $max_by_destination = mysqli_fetch_object($query); ?>
         var data = google.visualization.arrayToDataTable([
           ['ID', 'Average Length of Stay', 'Number of <?php echo $enquiries_bookings_label; ?>', 'Average number of Adults', 'Average number of Children']
-          <?php $query = mysql_query("SELECT
+          <?php $query = mysqli_query($con, "SELECT
           a.destination,
           (SELECT count(*) FROM data where destination = a.destination".(count($where)>0?" and " . implode(" and ", $where):"").") enquiries,
           (SELECT round(avg(abs(datediff(arrival, departure))), 3) FROM data WHERE destination = a.destination".(count($where)>0?" and " . implode(" and ", $where):"").") avg_days,
@@ -477,7 +476,7 @@ $max = mysql_fetch_object($query);
           (SELECT avg(children) FROM data where destination = a.destination".(count($where)>0?" and " . implode(" and ", $where):"").") children
           FROM `data` a
           group by a.destination");
-          while($row = mysql_fetch_object($query)) : ?>
+          while($row = mysqli_fetch_object($query)) : ?>
             ,['<?php echo $gemeinden[$row->destination]; ?>', <?php echo (float) $row->avg_days; ?>, <?php echo round((100*(float) $row->enquiries)/$max_by_destination->max); ?>, <?php echo (float) $row->children; ?>, <?php echo (float) $row->adults; ?>]
           <?php endwhile; ?>
         ]);
@@ -502,13 +501,13 @@ $max = mysql_fetch_object($query);
 
         var data = google.visualization.arrayToDataTable([
           ['ID', 'Number of Adults', 'Number of Children']
-          <?php $query = mysql_query("SELECT
+          <?php $query = mysqli_query($con, "SELECT
           a.destination,
           (SELECT round(avg(adults), 3) FROM data where destination = a.destination".(count($where)>0?" and " . implode(" and ", $where):"").") avg_adults,
           (SELECT round(avg(children), 3) FROM data WHERE destination = a.destination".(count($where)>0?" and " . implode(" and ", $where):"").") avg_children
           FROM `data` a
           group by a.destination");
-          while($row = mysql_fetch_object($query)) : ?>
+          while($row = mysqli_fetch_object($query)) : ?>
             ,['<?php echo $gemeinden[$row->destination]; ?>', <?php echo (float) $row->avg_adults; ?>, <?php echo (float) $row->avg_children; ?>]
           <?php endwhile; ?>
         ]);
@@ -677,8 +676,8 @@ $max = mysql_fetch_object($query);
 
     <?php
 
-    $query = mysql_query("select round(avg(abs(datediff(departure, arrival))), 3) avg_stay from data".(count($where)>0?" where " . implode(" and ", $where):""));
-    $row = mysql_fetch_object($query);
+    $query = mysqli_query($con, "select round(avg(abs(datediff(departure, arrival))), 3) avg_stay from data".(count($where)>0?" where " . implode(" and ", $where):""));
+    $row = mysqli_fetch_object($query);
     ?>
     <div class="special-wrapper">
     <div class="special">
@@ -688,8 +687,8 @@ $max = mysql_fetch_object($query);
     </div>
     <?php
 
-    $query = mysql_query("select round(avg(adults), 3) avg_adults from data".(count($where)>0?" where " . implode(" and ", $where):""));
-    $row = mysql_fetch_object($query);
+    $query = mysqli_query($con, "select round(avg(adults), 3) avg_adults from data".(count($where)>0?" where " . implode(" and ", $where):""));
+    $row = mysqli_fetch_object($query);
 
     ?>
     <div class="special-wrapper">
@@ -700,8 +699,8 @@ $max = mysql_fetch_object($query);
     </div>
     <?php
 
-    $query = mysql_query("select round(avg(children), 3) avg_children from data".(count($where)>0?" where " . implode(" and ", $where):""));
-    $row = mysql_fetch_object($query);
+    $query = mysqli_query($con, "select round(avg(children), 3) avg_children from data".(count($where)>0?" where " . implode(" and ", $where):""));
+    $row = mysqli_fetch_object($query);
 
     ?>
     <div class="special-wrapper">

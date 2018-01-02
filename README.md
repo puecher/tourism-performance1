@@ -1,3 +1,3 @@
 
 ##Required php modules
-- php5-intl
+- php7.0-intl
